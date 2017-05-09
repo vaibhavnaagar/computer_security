@@ -1,0 +1,132 @@
+## Place your answers here.
+Exercise: 2
+===========
+exploit-2a.py overwrites the return address of 'process_client' function by overflowing the 'env' buffer in zookd.c at 63rd line.
+exploit-2b.py overwrites the funcion pointer 'handler' by overflowing the 'pn' buffer in http.c at 283rd line.
+
+Exercise: 3
+===========
+exploit-3.py uses the vulnerability of 'pn' buffer, as used in exploit-2b.py, to inject shell code and unlink
+ /home/httpd/grades.txt
+  - All other vulnerabilities of exercise-1, [zookd.c:63], [http.c:73], [http.c:318] and [http.c:125] can be used to
+inject shellcode as by overflowing buffer changes return address in the same manner using the HTTP request format as described in
+bugs.txt.
+  - Also in the vulnerabilty at [zookd.c:63] uses query_string of an url to overflow but SYS_unlink is of value 10
+(newline character). So "http_read_line" method reads upto newline character unless it is encoded in url format.
+But once it is encoded inside query string, it never get decoded again(i.e. by eg: sprint(buf, "%s", url);) and
+placed inside 'env' buffer as it is. So encoded shellcode could not do anything. So in shellcode.S instead of using
+value of $SYS_unlink(=10), first mov a value smaller than SYS_unlink (< 9) and then increment it to make 10. In this way it
+could generate shellcode without newline character and can be injected without encoding.
+
+Exercise: 4
+===========
+exploit-4a.py overwrites the return address of 'process_client' function by overflowing the 'env' buffer in zookd.c at 63rd line
+`````````````  and changes it to the address of unlink library function with proper arguments.
+exploit-4b.py overwrites the return address of 'http_serve' function by overflowing the 'pn' buffer in http.c at 283rd line
+`````````````  and changes it to the address of unlink library function with proper arguments. To achieve this the value of
+"handler" is pointed to "http_serve_none" address to avoid seg fault and after returning from handler, it calls unlink function.
+[Note: the address of "http_serve_none" may change when some new lines of code are added (like printfs) due to which address of
+http_serve_none in my http.c is different from original executable. And in exploit the address is set according to original code.]
+
+-  All the other vulnerabilities can be exploited in the same manner using the format of HTTP request described in bugs.txt.
+[http.c:73] :: HTTP request could be as follows:
+"A"*fillup + unlink_addr + retaddrFromUnlink + argumentAddr(set to 12 bytes after stack_retaddr) + "/home/httpd/grades.txt"
+
+[http.c:125] :: HTTP request could be as follows:
+"GET / HTTP/1.0 \r\n" +\
+"H: " + "A"*fillup + unlinkAddr + retaddrFromUnlink + argumentAddr(set to 12 bytes after stack_retaddr) + "/home/httpd/grades.txt"
+
+[http.c:318] :: HTTP request could be as follows:
+"GET /zoobar/media/zoobar.css/" + "A"*fillup +\
+ unlinkAddr + retaddrFromUnlink + argumentAddr(set to 12 bytes after stack_retaddr) + "/home/httpd/grades.txt"
+
+Exercise: 5
+===========
+Other vulnerabilities are:
+1.) Privilige Escalation: The server directory is not encapsulated in an environment like jail. So an attacker can access all
+    ````````````````````` files present on the system except the binaries by just making the request of correct file path.
+    Eg: GET /../../../etc/passwd HTTP/1.0   (or '.' can be replaced by '%2E' to encode it)
+        GET /zookd.c HTTP/1.0
+> Thus attacker can access all codes of the server and other confidential files as no environment is created.
+> This attack works because open system call with O_RDONLY flag opens a file if the user has permissions and valid pathname is
+provided.
+> Limitations: Attacker cannot change the content of any file or run the shellcode.
+> To prevent from privilege escalation, one can use jailkit to create jail environment. Other solution could be to change the
+"chroot" of the system. Also the code files should not present in the same folder with their binaries and other server related
+files and thus move out of the environment or by changing permission could prevent from accessing the files.
+
+2.) DOS: The server does not handle rquests concurrently which makes it higlhy vulnerable to DOS attack. In [zookd.c] after
+   `````  accepting a new connection ("accept"), it calls 'process_client' without creating any new process or thread. Thus
+the server serves the requests sequentially. Then 'process_client' calls http_request_line' and the request is received by the
+'read' function in 'http_read_line'. This 'http_read_line' function does not break the loop until it receives "\n" (newline) or
+client closes the connection. So to do DOS attack, attacker just need to remove newline character from request.
+      Eg: GET / HTTP/1.0\r
+Since "read" is blocking, so after getting such request and if client does not closes its connection, then the server will stuck
+at this "read" function. And no more requests will be entertained. And other clients will be "Connection Timed Out".
+
+> Limitations: Attacker cannot inject or run shellcode.
+> Attacker can stop the server from handling any more requests and make the server non-functional without crashing it.
+> To prevent from DOS attak, server must set the time limit to handle a request and in such cases if time limit exceeds then
+server should close connection from its side and kill its thread or process of that client if it gets stuck at 'read' call.
+Also server should create a new process (using fork) or thread whenever new client is connected and thus make the server
+concurrent.
+
+Other buffer overflow vulnerabilities:
+3.) [zookfs.c:28]: The "envp" buffer can be overflowed to change return address of main function of the child process when large
+    `````````````` query string is received through url. [zookd.c] passes "env" to envp of [zookfs.c], if env is of about
+4100 bytes such that the return address of "process_client" isn't modified, then in [zookfs.c] the child process calls
+"env_deserialize" function which overflows the "envp" buffer without checking its size.
+  <env_deserialize(envp, len);>   // This len is the number of characters currently present in the "envp" buffer.
+Then in <void env_deserialize(char *env, size_t len)>
+  <char *envp = (env + len - 1);>
+  <envp += sprintf(envp, "GATEWAY_INTERFACE=CGI/1.1") + 1;>
+  <envp += sprintf(envp, "REDIRECT_STATUS=200") + 1;>
+  <*envp = 0;>
+These lines append strings to "envp" without checking its size and thus overflow it and give segmentation fault.
+
+> HTTP Request format:
+"GET /?attack=" + "A"*3995 + " HTTP/1.0\r\n\r\n"
+
+> Limitation of this attack: This attack cannot overwrite the return address of main function in child procees by the desired one.
+Because both "env" and "envp" are of 4096 bytes and "envp" is the copy of "env". So as we try to increase the length of
+query_string even further, then before reaching close to return address the "env" buffer of 'process_client' in zookd.c would
+get overflowed and change its return address and crashes the server.
+  Thus this attack cannot inject shellcode or do return-to-libc attack.
+
+> Attacker can still crash the process of zookfs service due to segmentation fault.
+
+> We can fix it by sending the size of "envp" as an argument to 'env_deserialize' function and use "snprintf" instead of "sprintf"
+to append strings in "envp" with its true size as an argument to it. Thus add more characters to it only when there is empty
+space in buffer.
+
+4.) [http.c:390]: The "buf" buffer in "http_serve_executable" can be overflowed by the login_username string. When user registers
+    ``````````````on login page then after successful registration, the server responses with the dashboard page and sets cookie
+as follows:
+    "Set-Cookie: PyZoobarLogin=username#b3403d53797b7b8dffb30b270979db38; Path=/"
+CGI executable generates this cookie and stores in "buf" buffer in 'http_serve_executable' function. As in the cookie username
+is present and there is no restriction on the size of username, so large username can overflow the buffer and change return
+address of 'http_serve_executable' function which can crash the child process of zookfs server due to segmentation fault
+and no data is sent back to client.
+  <if (http_read_line(pipefd[0], buf) < 0) {>
+And the 'http_request_line' function fills the buffer without checking its size.
+
+> Instead of HTTP Post request, I filled the login form using "curl" command:
+curl -X POST -d login_username="A"*2048 -d login_password="1234" -d submit_registration="Register" -d submit_login="" http://192.168.56.101:8080/zoobar/index.cgi/login
+
+> Attacker can inject shellcode and run it on executable stack and do return-to-libc attack using this "curl" command or making
+HTTP POST request after finding the correct stack addresses. Thus this vulnerability can be exploited and can change the
+control flow of program.
+
+> To fix it, reading upto the size of "buf" in http_read_line could prevent from crashing the process and other attacks. But also
+it will also destroy the purpose of unique cookie as it will contain only username when it is very large. So to avoid that
+the length of login_username could be restricted to some characters only such that it cannot overflow the buffer.
+Other solution could be, the CGI script can be modified such that instead of using plain username in the cookie, its hash value
+of fixed length can be used.
+
+Exercise: 6
+===========
+Code lines changed or added at:
+> [http.h] = 8,14,30
+> [http.c] = 30-121, 289, 319, 486-506
+> [zookd.c] = 71
+> [zookfs.c] = 44, 49-53

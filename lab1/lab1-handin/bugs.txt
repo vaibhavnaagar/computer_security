@@ -1,0 +1,64 @@
+#
+# [file:#lines]
+# desc
+#
+
+[zookd.c:63]
+the 'env' variable in 'process_client' function can be overwritten by the url from 'fd' because in 'http_request_line'
+function the 'envp' variable referencing the 'env' buffer can be overflowed by the query string of url as it doesn't check
+the size of 'env' buffer.
+  Stack canary could prevent from running malicious code but it could not prevent from crashing the server as return address
+is lost. So a copy of return address need to be stored.
+HTTP Request:
+GET /?attack=A...(stack_retaddr - stack_buffer -offset)times  HTTP/1.0 \r\n\r\n
+
+    <http_request_line(fd, reqpath, sizeof(reqpath), env, &env_len)>
+    <envp += sprintf(envp, "QUERY_STRING=%s", qp + 1) + 1;>
+
+[http.c:73]
+the 'buf' variable (of size 4096) can be overwritten by the url from 'fd' because 'http_read_line' function read request
+in an infinite loop until it receives a '\n'. So when more than 4096 characters are passed in the url
+(including or not including query string) can overflow the buffer change return address of 'http_request_line' function.
+  Stack canary could prevent from running malicious code but it could not prevent from crashing the server as return address
+is lost. So a copy of return address need to be stored.
+HTTP Request:
+GET /A...(stack_retaddr - stack_buffer -offset)times  HTTP/1.0 \r\n\r\n
+
+    <http_read_line(fd, buf)>
+    <for (;;)>
+
+[http.c:283]
+'pn' variable in the 'http_serve' function can be overwritten by the REQUEST_URI in the url which can change value of
+function pointer 'handler' because while concatenating the uri with 'pn' it doesn't check the size of 'pn'.
+  Stack canary could prevent from running malicious code but it could not prevent from crashing the process due to
+segmentation falut as return address is arbitrary. So a copy of return address need to be stored.
+HTTP Request:
+GET /A...(handler_addr - stack_buffer - offset)times  HTTP/1.0 \r\n\r\n
+
+    <strcat(pn, name);>
+
+[http.c:125]
+'buf' variable in the function 'http_request_headers' can be overwritten by the header of the HTTP request which can
+change the return address. Again the 'http_read_line' function fills 'buf' without checking its size. So in http request a
+custom header is created.
+  Stack canary could prevent from running malicious code but it could not prevent from crashing the process due to
+segmentation falut as return address is arbitrary. So a copy of return address need to be stored.
+HTTP Request:
+GET / HTTP/1.0 \r\n
+Attack: A...(stack_retaddr - stack_buffer - offset) \r\n\r\n
+
+    <http_read_line(fd, buf) < 0>
+    <for (;;)>
+
+[http.c:318]
+'buf' variable in the function 'http_serve_file' can be overwritten by the request_uri if PATH_INFO is set and thus
+can change the return address. Vulnerabiltiy arises due to filling the buffer without checking its size. In order to
+set the PATH_INFO env variable, the request_uri must have some valid and regular filename before inserting malcious code.
+  Stack canary could prevent from running malicious code but it could not prevent crashing the process due to
+segmentation falut as return address is arbitrary. So a copy of return address need to be stored.
+HTTP request:
+GET /zoobar/media/zoobar.css/AAAA...(stack_retaddr - stack_buffer -offset)times  HTTP/1.0 \r\n\r\n
+
+    <sprintf(buf, "%s%s", pn, getenv("PATH_INFO"));>
+
+# many more come here
